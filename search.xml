@@ -4,13 +4,41 @@
   
     
     <entry>
-      <title>Hello world</title>
-      <link href="/Hello-world/"/>
-      <url>/Hello-world/</url>
+      <title>Sanco 8000 keyboard replacement - Proof of Concept</title>
+      <link href="/Sanco-8000-keyboard-replacement-Proof-of-Concept/"/>
+      <url>/Sanco-8000-keyboard-replacement-Proof-of-Concept/</url>
       
-        <content type="html"><![CDATA[<h1>Among us</h1><h3 id="sus">sus</h3><table><thead><tr><th>Syntax</th><th>Description</th></tr></thead><tbody><tr><td>Header</td><td>Title</td></tr><tr><td>Paragraph</td><td>Text</td></tr></tbody></table><ul><li>[x] Write the press release</li><li>[ ] Update the website</li><li>[ ] Contact the media</li></ul><blockquote><p>what???</p></blockquote><ul><li><a href="#code">Amongus</a><ul><li>among</li><li>us</li></ul></li><li>us</li></ul><p>That is so funny! :joy:</p><p>Here’s a sentence with a footnote. [^1]</p><p>[^1]: This is the footnote.</p><p>sus</p><p><a id="code"></a></p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span>&#123;</span><br><span class="line">    <span class="type">int</span> call = sus();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>]]></content>
+        <content type="html"><![CDATA[<p>This article will illustrate a proof of concept for a Sanco 8000 keyboard replacement. In this article I use an arduino nano, but the same goal can be replicated on other hardware.</p><p>At the end of the article you’ll be able to use arduino to emulate the key press of the BOOT key.</p><p>This article is based around the information found in <a href="https://github.com/RetroNewbie/Sanco_8000">my repository</a>.</p><h2 id="bill-of-materials"><a class="markdownIt-Anchor" href="#bill-of-materials"></a> Bill of materials</h2><ul><li>Arduino nano</li><li>8 pin DIN male connector</li></ul><h2 id="signal"><a class="markdownIt-Anchor" href="#signal"></a> Signal</h2><p>Each time a key is pressed on the keyboard two bytes are sent through the DATA pin. The signal uses serial TTL votlages (5v/0v) at ~1200 baud with 8 bit of data, no parity and one stop bit.</p><p>The first byte that is sent represents the key that was pressed. After the first byte there is a delay of around ~2ms. And after that the second byte containing some flags for CTRL, ALT, SHIFT and CAPS is sent.</p><h3 id="example"><a class="markdownIt-Anchor" href="#example"></a> Example:</h3><p><img src="/images/signal_ex.png" alt="signal example" /></p><p>You can find the key map and the more information <a href="https://github.com/RetroNewbie/Sanco_8000">here</a>.</p><p>But for this proof of concept I simply used the code for the BOOT key (0x4D) followed by the byte with no active flags (0xC0).</p><h2 id="wiring"><a class="markdownIt-Anchor" href="#wiring"></a> Wiring</h2><p><img src="/images/8pinDIN.png" alt="Din male connector" /></p><p>⚠️ The image and the pin numbers that will be used in this article refers the male connector pinout.</p><p>Since I used the built in serial pin and library for the arduino nano the wiring is pretty straightforward.</p><p>TX (Transmit pin) of arduino &lt;-&gt; pin 3 of DIN connector</p><p>GND pin of arduino &lt;-&gt; pin 8 of DIN connector</p><h2 id="code"><a class="markdownIt-Anchor" href="#code"></a> Code</h2><p>Thanks to the built-in library for the arduino nano the code is really easy too.</p><figure class="highlight ino"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">setup</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="built_in">Serial</span>.<span class="built_in">begin</span>(<span class="number">1200</span>);   <span class="comment">// Set the baudarate to 1200 and initialize serial</span></span><br><span class="line">  <span class="keyword">while</span>(!<span class="built_in">Serial</span>)&#123;&#125;;     <span class="comment">// Wait for serial port to be ready</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">loop</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="built_in">Serial</span>.<span class="built_in">write</span>(<span class="number">0x4D</span>);    <span class="comment">// Write BOOT key code</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// Delay should be ~2ms but my arduino nano was off by a lot so I adjusted that with the help</span></span><br><span class="line">  <span class="comment">// of a logic analyzer. This resulted a ~2.5ms delay.</span></span><br><span class="line">  <span class="built_in">delay</span>(<span class="number">11</span>); </span><br><span class="line">  </span><br><span class="line">  <span class="built_in">Serial</span>.<span class="built_in">write</span>(<span class="number">0xC0</span>);   <span class="comment">// Send standard flag byte</span></span><br><span class="line">  <span class="built_in">delay</span>(<span class="number">2000</span>);          <span class="comment">// Wait two seconds </span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>The only problem that I had was that the delay function was inaccurate. So much so that to obtain a delay that was close to 2ms (2.5ms) I had to program a delay of 11ms.<br />I’m not sure if this problem is tied to the arduino model or general hardware limitations, but I suggest, when possible, to always check with a logic analyzer for the correct delay.</p><p>And just like that you can emulate a key press on the Sanco 8000!</p>]]></content>
       
       
+      <categories>
+          
+          <category> hardware </category>
+          
+          <category> project </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Sanco 8000 </tag>
+            
+            <tag> Sanco 8001 </tag>
+            
+            <tag> Sanco 8003 </tag>
+            
+            <tag> Sanco IBEX </tag>
+            
+            <tag> retrocomputing </tag>
+            
+            <tag> computer vintage </tag>
+            
+            <tag> proof of concept </tag>
+            
+            <tag> keyboard </tag>
+            
+        </tags>
       
     </entry>
     
